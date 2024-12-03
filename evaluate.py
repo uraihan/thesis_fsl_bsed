@@ -1,19 +1,21 @@
-import torch
-import torch.nn as nn
-import torchaudio
-from torchaudio import transforms as T
-from torch.utils.data import DataLoader
-from models import ResNet
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-from torch.utils.data import TensorDataset, DataLoader
-from util import finetune_ce
 import glob
 import os
 import pickle
-from da import RandomCrop, Resize, Compander
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torchaudio
+from torch.utils.data import DataLoader, TensorDataset
+from torchaudio import transforms as T
+from tqdm import tqdm
+
 from args import args
+from da import Compander, RandomCrop, Resize
+from models import ResNet
+from util import finetune_ce
+
 if args.wandb:
     import wandb
 
@@ -85,6 +87,8 @@ for filename in filenames:
 
     resample = T.Resample(sr, TARGET_SR)
     wav = resample(wav)
+    if wav.shape[0] != 1:
+        wav = torch.mean(wav, dim=0, keepdim=True)
     melspec = transform(wav)
 
     features_pos = []
