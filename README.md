@@ -1,71 +1,32 @@
-# Supervised Contrastive Learning for Pre-Training Bioacoustic Few-Shot Systems
-Authors: Ilyass Moummad, Romain Serizel, Nicolas Farrugia
+# Master's Thesis in Few-Shot Learning for Bioacoustics Sound Event Detection
+Umair Raihan
 ---
 
-This is the implementation of our [submission](https://dcase.community/documents/challenge2023/technical_reports/DCASE2023_Moummad_IMT_t5.pdf) for the challenge DCASE 2023 task 5.\
-We invite you to take a look at the [workshop paper version](https://dcase.community/documents/workshop2023/proceedings/DCASE2023Workshop_Moummad_63.pdf) for more details and ablation studies.\
-We ranked 2nd in the challenge. For more informations about the challenge results, [click here](https://dcase.community/challenge2023/task-few-shot-bioacoustic-event-detection-results) 
+This repository is heavily inspired by [DCASE 2023 Task 5 submission by Moummad, et al.,](https://dcase.community/documents/challenge2023/technical_reports/DCASE2023_Moummad_IMT_t5.pdf) titled, "Supervised Contrastive Learning for Pre-Training Bioacoustic Few-Shot Systems". I highly recommended readers to read the original paper.
 
-Our approach consists in :
+The approach consists of:
 <ul>
 <li>Training a feature extractor on the training set</li>
-<li>Training a linear classifier on each audio of the validation set</li>
+<li>Training a linear classifier on each audio of the validation set (finetuning)</li>
 </ul>
 
-Dataset to be downloaded from this link: [DCASE 2023 TASK5 Dataset](https://dcase.community/challenge2024/task-few-shot-bioacoustic-event-detection)
+# Training Pipeline
 
-Firstly, we create the spectrograms of the training set :\
-```create_train.py``` : with argument ```--traindir``` for the folder containing the training datasets.
+1. Create the spectrograms of the training set :\
+```create_train.py``` : with argument ```--traindir``` for the folder containing the training datasets and ```--method``` to switch loss functions used when training the encoder between Super Contrastive Loss ("scl"), Angular Margin Loss ("aml"), and Angular Contrastive Loss ("acl").
 
-To train the feature extractor :\
-```train.py``` : with arguments ```--traindir``` (the same as above), ```--device``` the device to train on, and others concerning training and data augmentation hyperparameters that can be found in ```args.py``` with default values that we used.
+2. Train feature extractor:\
+```train.py```: with arguments ```--traindir``` (the same as above), ```--device``` the device to train on, and others concerning training and data augmentation hyperparameters that can be found in ```args.py``` with its default values.
 
-To validate the learned feature extractor using 5-shots :\
-```evaluate.py``` : with arguments ```--valdir``` for the folder containing the validation datasets, and others concerning hyperparameters that can also be found in ```args.py```. Add :\
-For submission 1 :\
+3. To validate the learned feature extractor using 5-shots :\
+```evaluate.py``` : with arguments ```--valdir``` for the folder containing the validation datasets, and others concerning hyperparameters that can also be found in ```args.py```. For example, you can pass :\
 ```--ft 0 --ftlr 0.01 --ftepochs 20 --method ce --adam```\
-For submission 2 :\
-```--ft 1 --ftlr 0.001 --ftepochs 40 --method ce --adam```\
-For submission 3 :\
-```--ft 2 --ftlr 0.001 --ftepochs 40 --method ce --adam```\
-For submission 4 :\
-```--ft 3 --ftlr 0.001 --ftepochs 40 --method ce --adam```
 
-To get the scores :\
-```evaluation_metrics/evaluation.py``` : with arguments ```-pred_file``` for the predictions csv file created by ```evaluate.py``` (the file is in : traindir/../../outputs/eval.csv'), ```-ref_files``` for the path of validation datasets, and ```-save_path``` for the folder where to save the scores json file
 
-If you any question or a problem with the code/results do not hesitate to mail me on : ilyass.moummad@imt-atlantique.fr or open an issue on this repository, I am very responsive.
+To get the scores using DCASE 2024 Task 5 evaluation metrics:\
+```evaluation_metrics/evaluation.py``` : with arguments ```-pred_file``` for the predictions csv file created by ```evaluate.py``` (the default location of the file is in : traindir/../../outputs/eval.csv'), ```-ref_files_path``` for the path of validation datasets, and ```-savepath``` for the folder where to save the scores json file
 
 ---
 
 ### Credits
-We are thankful for the challenge baseline code that helped us make this repository : https://github.com/ilyassmoummad/dcase-few-shot-bioacoustic/tree/main
-
-### Bonus
-Take a look at our newer work accepted at ICASSP 2024 where we improve the pre-training loss as well as the inference strategy (which is more stable) : https://github.com/ilyassmoummad/RCL_FS_BSED
-
----
-
-### To cite the challenge report
-```
-@techreport{Moummad2023,
-    Author = "Moummad, Ilyass and Serizel, Romain and Farrugia, Nicolas",
-    title = "SUPERVISED CONTRASTIVE LEARNING FOR PRE-TRAINING BIOACOUSTIC FEW SHOT SYSTEMS",
-    institution = "DCASE2023 Challenge",
-    year = "2023",
-    month = "June",
-}
-```
-
-### Or to cite the workshop paper version
-```
-@inproceedings{moummad,
-    author = "Moummad, Ilyass and Serizel, Romain and Farrugia, Nicolas",
-    title = "Pretraining Representations for Bioacoustic Few-Shot Detection Using Supervised Contrastive Learning",
-    booktitle = "Proceedings of the 8th Detection and Classification of Acoustic Scenes and Events 2023 Workshop (DCASE2023)",
-    address = "Tampere, Finland",
-    month = "September",
-    year = "2023",
-    pages = "136--140",
-}
-```
+Huge thank you to Moummad et al., for the DCASE 2023 submission solution that heavily inspires this thesis. Big thank you as well for my supervisors, Dr. Irene Martin Morato and Dr. Annamaria Mesaros, for guiding me in my thesis journey. And last but not least, thank you to Shanshan Wang for the guidance and work on Angular Margin Contrastive Loss that becomes one of the main focus point of this thesis.
