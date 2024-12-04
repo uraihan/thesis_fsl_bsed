@@ -1,20 +1,24 @@
+import math
+import os
+
+import h5py
 import torch
 from torch import nn
-from tqdm import tqdm
-from losses import SupConLoss
-from da import RandomCrop, Resize, Compander, GaussNoise, FreqShift, MixRandom
-from models import ResNet
 from torchinfo import summary
+from tqdm import tqdm
+
 from args import args
-import math
-import h5py
-import os
+from da import Compander, FreqShift, GaussNoise, MixRandom, RandomCrop, Resize
+from losses import AngularMarginLoss, SupConLoss
+from models import ResNet
+
 
 def train_scl(encoder, train_loader, transform1, transform2, args):
 
     print(f"Training starting on {args.device}")
     
     loss_fn = SupConLoss(temperature=args.tau, device=args.device)
+    aml_fn = AngularMarginLoss(temperature=args.tau, device=args.device)
     
     optim = torch.optim.SGD(encoder.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.wd)
     num_epochs = args.epochs
@@ -39,12 +43,15 @@ def train_scl(encoder, train_loader, transform1, transform2, args):
 
             x1 = transform1(x); x2 = transform2(x)
 
-            _, x_out1 = encoder(x1); _, x_out2 = encoder(x2)
+            x_out_aml, x_out1 = encoder(x1) 
+            _, x_out2 = encoder(x2)
 
             if args.method == 'ssl':
                 loss = loss_fn(x_out1, x_out2)
             elif args.method == 'scl':
                 loss = loss_fn(x_out1, x_out2, y)
+            elif args.method == 'aml':
+                loss = aml_fn(x_out_aml, y)
             tr_loss += loss.item()
 
             loss.backward()
