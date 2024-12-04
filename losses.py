@@ -55,6 +55,7 @@ class AngularMarginLoss(nn.Module):
 
 def amc(device, features, labels):
 
+    features = features.view(features.shape[0], -1)
     features = F.normalize(features, dim=1)
     labels = labels.contiguous().view(-1, 1)
     label_mask = torch.eq(labels, labels.T)
