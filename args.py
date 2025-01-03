@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--device", type=str, default="cuda:0")  # device to train on
 parser.add_argument("--workers", type=int, default=4)  # number of workers
 parser.add_argument("--wandb", action="store_true")  # use wandb
+parser.add_argument("--jobname", type=str)  # device to train on
 
 
 ### data args ###
@@ -23,10 +24,6 @@ parser.add_argument(
 parser.add_argument(
     "--h5file", type=str, default="train.h5"
 )  # name of train H5 file to use (for parallel computing)
-parser.add_argument("--evalcsv", type=str)  # name of the evaluation csv file
-parser.add_argument(
-    "--trainckpt", type=str
-)  # name of the trained model checkpoint file
 
 
 ### training args ###
