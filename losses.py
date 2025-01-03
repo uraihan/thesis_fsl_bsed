@@ -20,8 +20,8 @@ class SupConLoss(
 class AngularContrastiveLoss(nn.Module):
     def __init__(
         self,
+        margin,
         alpha=None,
-        margin=None,
         disableCL=False,
         temperature=0.06,
         device="cuda:0",
@@ -30,17 +30,12 @@ class AngularContrastiveLoss(nn.Module):
         self.temperature = temperature
         self.device = device
         self.disableCL = disableCL
+        self.margin = margin
 
-        if self.disableCL:
+        if not self.disableCL:
             assert (
-                margin is not None
-            ), f"You haven't provided margin param. Margin: {margin}"
-            self.margin = margin
-        else:
-            assert (
-                margin is not None and alpha is not None
-            ), f"You either haven't provided margin or alpha param.\nMargin: {margin}, Alpha: {alpha}"
-            self.margin = margin
+                alpha is not None
+            ), f"You haven't provided alpha param.\nAlpha: {alpha}"
             self.alpha = alpha
 
     def forward(self, am_features, projection1=None, projection2=None, labels=None):
