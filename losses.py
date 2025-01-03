@@ -3,58 +3,101 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class SupConLoss(nn.Module): # from : https://github.com/ilyassmoummad/scl_icbhi2017/blob/main/losses.py
-    def __init__(self, temperature=0.06, device="cuda:0"): # temperature was not explored for this task
+class SupConLoss(
+    nn.Module
+):  # from : https://github.com/ilyassmoummad/scl_icbhi2017/blob/main/losses.py
+    def __init__(
+        self, temperature=0.06, device="cuda:0"
+    ):  # temperature was not explored for this task
         super().__init__()
         self.temperature = temperature
         self.device = device
 
     def forward(self, projection1, projection2, labels=None):
+        return scl(projection1, projection2, labels, self.temperature, self.device)
 
-        projection1, projection2 = F.normalize(projection1), F.normalize(projection2)
-        features = torch.cat([projection1.unsqueeze(1), projection2.unsqueeze(1)], dim=1)
-        batch_size = features.shape[0]
 
-        if labels is None:
-            mask = torch.eye(batch_size, dtype=torch.float32).to(self.device)
-        else:
-            labels = labels.contiguous().view(-1, 1)
-            mask = torch.eq(labels, labels.T).float().to(self.device)
-
-        contrast_count = features.shape[1]
-        contrast_feature = torch.cat(torch.unbind(features, dim=1), dim=0)
-
-        anchor_dot_contrast = torch.div(torch.matmul(contrast_feature, contrast_feature.T), self.temperature)
-
-        logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
-        logits = anchor_dot_contrast - logits_max.detach() # for numerical stability
-
-        mask = mask.repeat(contrast_count, contrast_count)
-        logits_mask = torch.scatter(torch.ones_like(mask), 1, torch.arange(batch_size * contrast_count).view(-1, 1).to(self.device), 0)
-        # or simply : logits_mask = torch.ones_like(mask) - torch.eye(50)
-        mask = mask * logits_mask
-
-        exp_logits = torch.exp(logits) * logits_mask
-        log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
-
-        mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
-
-        loss = - mean_log_prob_pos
-        loss = loss.view(contrast_count, batch_size).mean()
-        
-        return loss
-
-class AngularMarginLoss(nn.Module):
-    def __init__(self, temperature=0.06, device="cuda:0"): # temperature was not explored for this task
+class AngularContrastiveLoss(nn.Module):
+    def __init__(
+        self,
+        alpha=None,
+        margin=None,
+        disableCL=False,
+        temperature=0.06,
+        device="cuda:0",
+    ):  # temperature was not explored for this task
         super().__init__()
         self.temperature = temperature
         self.device = device
+        self.disableCL = disableCL
 
-    def forward(self, features, labels=None):
-        return amc(self.device, features, labels)
+        if self.disableCL:
+            assert (
+                margin is not None
+            ), f"You haven't provided margin param. Margin: {margin}"
+            self.margin = margin
+        else:
+            assert (
+                margin is not None and alpha is not None
+            ), f"You either haven't provided margin or alpha param.\nMargin: {margin}, Alpha: {alpha}"
+            self.margin = margin
+            self.alpha = alpha
 
-def amc(device, features, labels):
+    def forward(self, am_features, projection1=None, projection2=None, labels=None):
+        if self.disableCL:
+            return amc(self.device, am_features, labels)
+        else:
+            assert (
+                projection1 is not None and projection2 is not None
+            ), "You haven't provided feature projection for calculating the normal Contrastive Loss component."
+            loss1 = scl(projection1, projection2, labels, self.temperature, self.device)
+            loss2 = amc(self.device, am_features, labels)
+            return loss1 * self.alpha + (1 - self.alpha) * loss2
 
+
+def scl(projection1, projection2, labels, temperature, device):
+    projection1, projection2 = F.normalize(projection1), F.normalize(projection2)
+    features = torch.cat([projection1.unsqueeze(1), projection2.unsqueeze(1)], dim=1)
+    batch_size = features.shape[0]
+
+    if labels is None:
+        mask = torch.eye(batch_size, dtype=torch.float32).to(device)
+    else:
+        labels = labels.contiguous().view(-1, 1)
+        mask = torch.eq(labels, labels.T).float().to(device)
+
+    contrast_count = features.shape[1]
+    contrast_feature = torch.cat(torch.unbind(features, dim=1), dim=0)
+
+    anchor_dot_contrast = torch.div(
+        torch.matmul(contrast_feature, contrast_feature.T), temperature
+    )
+
+    logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
+    logits = anchor_dot_contrast - logits_max.detach()  # for numerical stability
+
+    mask = mask.repeat(contrast_count, contrast_count)
+    logits_mask = torch.scatter(
+        torch.ones_like(mask),
+        1,
+        torch.arange(batch_size * contrast_count).view(-1, 1).to(device),
+        0,
+    )
+    # or simply : logits_mask = torch.ones_like(mask) - torch.eye(50)
+    mask = mask * logits_mask
+
+    exp_logits = torch.exp(logits) * logits_mask
+    log_prob = logits - torch.log(exp_logits.sum(1, keepdim=True))
+
+    mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
+
+    loss = -mean_log_prob_pos
+    loss = loss.view(contrast_count, batch_size).mean()
+
+    return loss
+
+
+def amc(device, features, labels, margin):
     features = features.view(features.shape[0], -1)
     features = F.normalize(features, dim=1)
     labels = labels.contiguous().view(-1, 1)
@@ -64,9 +107,7 @@ def amc(device, features, labels):
 
     # discard the main diagonal from both: labels and similarities matrix
     diag_mask = torch.eye(label_mask.shape[0], dtype=torch.bool).to(device)
-    label_mask = label_mask[~diag_mask].view(
-        label_mask.shape[0], -1
-    )
+    label_mask = label_mask[~diag_mask].view(label_mask.shape[0], -1)
     similarity_matrix = similarity_matrix[~diag_mask].view(
         similarity_matrix.shape[0], -1
     )
@@ -78,7 +119,7 @@ def amc(device, features, labels):
     negatives = similarity_matrix[~label_mask.bool()]
 
     # if S_ij = 0
-    m = 0.5
+    m = margin
     negatives = torch.clamp(negatives, min=-1 + 1e-7, max=1 - 1e-7)
     clip = torch.acos(negatives)
     l1 = torch.max(torch.zeros(clip.shape[0]).to(device), (m - clip))
