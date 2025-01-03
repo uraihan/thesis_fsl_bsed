@@ -16,28 +16,33 @@ from models import ResNet
 def train(encoder, train_loader, transform1, transform2, args):
     print(f"Training starting on {args.device}")
 
-    if args.method in ["scl", "ssl"]:
-        loss_fn = SupConLoss(temperature=args.tau, device=args.device)
-    if args.method == "aml":
-        loss_fn = AngularContrastiveLoss(
-            margin=args.margin, temperature=args.tau, device=args.device
-        )
-    if args.method == "acl":
-        loss_fn = AngularContrastiveLoss(
-            margin=args.margin,
-            alpha=args.alpha,
-            temperature=args.tau,
-            device=args.device,
-        )
+    try:
+        if args.method in ["scl", "ssl"]:
+            loss_fn = SupConLoss(temperature=args.tau, device=args.device)
+        elif args.method == "aml":
+            loss_fn = AngularContrastiveLoss(
+                margin=args.margin, temperature=args.tau, device=args.device
+            )
+        elif args.method == "acl":
+            loss_fn = AngularContrastiveLoss(
+                margin=args.margin,
+                alpha=args.alpha,
+                temperature=args.tau,
+                device=args.device,
+            )
+        else:
+            raise ValueError
+    except ValueError:
+        print(f"Loss function/learning method {args.method} is not yet supported")
 
     optim = torch.optim.SGD(
         encoder.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.wd
     )
     num_epochs = args.epochs
 
-    ckpt_dir = os.path.join(args.traindir, "../model/")
+    ckpt_dir = os.path.join(args.traindir, "../../model/")
     os.makedirs(ckpt_dir, exist_ok=True)
-    last_model_path = os.path.join(ckpt_dir, "ckpt.pth")
+    last_model_path = os.path.join(ckpt_dir, f"ckpt_{args.jobname}.pth")
 
     encoder = encoder.to(args.device)
 
@@ -91,7 +96,7 @@ def adjust_learning_rate(optimizer, init_lr, epoch, tot_epochs):
 
 if __name__ == "__main__":
     # Load data
-    hdf_tr = os.path.join(args.traindir, "train.h5")
+    hdf_tr = os.path.join(args.traindir, args.h5file)
     hdf_train = h5py.File(hdf_tr, "r+")
     X = hdf_train["data"][:]
     Y = hdf_train["label"][:]
