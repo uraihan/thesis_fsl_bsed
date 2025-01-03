@@ -1,6 +1,7 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -96,10 +97,10 @@ class ResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
 
-        x = self.pool(x)
+        embedding = self.pool(x)
 
-        x = x.view(x.size(0), -1)
+        x = embedding.view(embedding.size(0), -1)
 
         out = self.lin(x)
         
-        return x, out
+        return embedding, out

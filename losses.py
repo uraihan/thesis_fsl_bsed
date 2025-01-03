@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+
 class SupConLoss(nn.Module): # from : https://github.com/ilyassmoummad/scl_icbhi2017/blob/main/losses.py
     def __init__(self, temperature=0.06, device="cuda:0"): # temperature was not explored for this task
         super().__init__()
@@ -42,3 +43,52 @@ class SupConLoss(nn.Module): # from : https://github.com/ilyassmoummad/scl_icbhi
         loss = loss.view(contrast_count, batch_size).mean()
         
         return loss
+
+class AngularMarginLoss(nn.Module):
+    def __init__(self, temperature=0.06, device="cuda:0"): # temperature was not explored for this task
+        super().__init__()
+        self.temperature = temperature
+        self.device = device
+
+    def forward(self, features, labels=None):
+        return amc(self.device, features, labels)
+
+def amc(device, features, labels):
+
+    features = features.view(features.shape[0], -1)
+    features = F.normalize(features, dim=1)
+    labels = labels.contiguous().view(-1, 1)
+    label_mask = torch.eq(labels, labels.T)
+
+    similarity_matrix = torch.matmul(features, features.T)
+
+    # discard the main diagonal from both: labels and similarities matrix
+    diag_mask = torch.eye(label_mask.shape[0], dtype=torch.bool).to(device)
+    label_mask = label_mask[~diag_mask].view(
+        label_mask.shape[0], -1
+    )
+    similarity_matrix = similarity_matrix[~diag_mask].view(
+        similarity_matrix.shape[0], -1
+    )
+
+    # select and combine multiple positives
+    positives = similarity_matrix[label_mask.bool()]
+
+    # select only the negatives the negatives
+    negatives = similarity_matrix[~label_mask.bool()]
+
+    # if S_ij = 0
+    m = 0.5
+    negatives = torch.clamp(negatives, min=-1 + 1e-7, max=1 - 1e-7)
+    clip = torch.acos(negatives)
+    l1 = torch.max(torch.zeros(clip.shape[0]).to(device), (m - clip))
+    l1 = torch.sum(l1**2)
+
+    # if S_ij = 1
+    positives = torch.clamp(positives, min=-1 + 1e-7, max=1 - 1e-7)
+    l2 = torch.acos(positives)
+    l2 = torch.sum(l2**2)
+
+    loss = (l1 + l2) / 50
+
+    return loss
