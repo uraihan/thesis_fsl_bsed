@@ -129,4 +129,11 @@ if __name__ == "__main__":
     print(summary(encoder))
 
     # Launch training
+    print(f"## Training params ##\nMethod: {args.method}\nModel used: {args.model}")
+    if args.method in ["acl", "aml"]:
+        print(f"Angular Margin: {args.margin}")
+    if args.method == "acl":
+        print(f"Alpha (ACL): {args.alpha}")
+
+    print("#############################")
     model = train(encoder, train_loader, transform1, transform2, args)
