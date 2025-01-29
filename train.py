@@ -18,23 +18,20 @@ def train(encoder, train_loader, transform1, transform2, args):
 
     if args.method in ["scl", "ssl"]:
         loss_fn = SupConLoss(temperature=args.tau, device=args.device)
-    elif args.method == "aml":
+    if args.method == "aml":
         loss_fn = AngularContrastiveLoss(
             margin=args.margin,
             temperature=args.tau,
             device=args.device,
             enableCL=False
         )
-    elif args.method == "acl":
+    if args.method == "acl":
         loss_fn = AngularContrastiveLoss(
             margin=args.margin,
             alpha=args.alpha,
             temperature=args.tau,
             device=args.device,
         )
-    else:
-        raise ValueError(
-            f"Loss function/learning method {args.method} is not yet supported")
 
     optim = torch.optim.SGD(
         encoder.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.wd
@@ -96,6 +93,10 @@ def adjust_learning_rate(optimizer, init_lr, epoch, tot_epochs):
 
 
 if __name__ == "__main__":
+    # Checking if requested loss function is supported
+    assert (args.method not in ["scl", "ssl", "aml", "acl"]
+            ), f"Loss function/learning method {args.method} is not yet supported"
+
     # Load data
     hdf_tr = os.path.join(args.traindir, args.h5file)
     hdf_train = h5py.File(hdf_tr, "r+")
