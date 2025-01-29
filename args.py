@@ -3,7 +3,8 @@ import argparse
 parser = argparse.ArgumentParser()
 
 ### generic args ###
-parser.add_argument("--device", type=str, default="cuda:0")  # device to train on
+parser.add_argument("--device", type=str,
+                    default="cuda:0")  # device to train on
 parser.add_argument("--workers", type=int, default=4)  # number of workers
 parser.add_argument("--wandb", action="store_true")  # use wandb
 parser.add_argument("--jobname", type=str)  # device to train on
@@ -27,7 +28,8 @@ parser.add_argument(
 
 
 ### training args ###
-# parser.add_argument("--model", type=str, default='resnet') #model to use ['resnet']
+# model to use (at the moment only resnet is supported)
+parser.add_argument("--model", type=str, default='resnet')
 parser.add_argument(
     "--method", type=str, default="scl"
 )  # whether to use labels or not for training representations ['scl', 'ssl]
@@ -43,7 +45,8 @@ parser.add_argument(
 
 
 ### loss function args ###
-parser.add_argument("--tau", type=float, default=0.06)  # temperature for cosine sim
+# temperature for cosine sim
+parser.add_argument("--tau", type=float, default=0.06)
 parser.add_argument(
     "--margin", type=float, default=0.4
 )  # margin parameter for Angular Margin Loss component
@@ -55,7 +58,8 @@ parser.add_argument(
 ### finetuning args ###
 parser.add_argument(
     "--ft", type=int, default=0
-)  # number of layers to finetune; 1, 2 or 3 layers (for the ResNet we are using)
+    # number of layers to finetune; 1, 2 or 3 layers (for the ResNet we are using)
+)
 parser.add_argument(
     "--ftlr", type=float, default=1e-2
 )  # learning rate for finetuning on support set
@@ -65,10 +69,13 @@ parser.add_argument(
 parser.add_argument(
     "--ftbs", type=int, default=32
 )  # batch size for fine tuning prototypes
-parser.add_argument("--qbs", type=int, default=16)  # batch size for query prediction
+# batch size for query prediction
+parser.add_argument("--qbs", type=int, default=16)
 parser.add_argument("--adam", action="store_true")  # use adam instead of sgd
-parser.add_argument("--step", type=int, default=10)  # scheduler step size for adam
-parser.add_argument("--gamma", type=float, default=0.5)  # evaluation scheduler gamma
+# scheduler step size for adam
+parser.add_argument("--step", type=int, default=10)
+# evaluation scheduler gamma
+parser.add_argument("--gamma", type=float, default=0.5)
 
 
 ### few shot args ###
@@ -85,7 +92,8 @@ parser.add_argument(
 ### mel spec parameters ###
 parser.add_argument("--nmels", type=int, default=128)  # number of mels
 parser.add_argument("--nfft", type=int, default=512)  # size of FFT
-parser.add_argument("--hoplen", type=int, default=128)  # hop between STFT windows
+# hop between STFT windows
+parser.add_argument("--hoplen", type=int, default=128)
 parser.add_argument("--fmax", type=int, default=11025)  # fmax
 parser.add_argument("--fmin", type=int, default=50)  # fmin
 
