@@ -24,7 +24,7 @@ def train(encoder, train_loader, transform1, transform2, args):
                 margin=args.margin,
                 temperature=args.tau,
                 device=args.device,
-                disableCL=True
+                enableCL=False
             )
         elif args.method == "acl":
             loss_fn = AngularContrastiveLoss(

@@ -22,37 +22,41 @@ class AngularContrastiveLoss(nn.Module):
         self,
         margin,
         alpha=None,
-        disableCL=False,
+        enableCL=True,
         temperature=0.06,
         device="cuda:0",
     ):  # temperature was not explored for this task
         super().__init__()
         self.temperature = temperature
         self.device = device
-        self.disableCL = disableCL
+        self.enableCL = enableCL
         self.margin = margin
 
-        if not self.disableCL:
+        if self.enableCL:
             assert (
                 alpha is not None
             ), f"You haven't provided alpha param.\nAlpha: {alpha}"
             self.alpha = alpha
 
     def forward(self, am_features, projection1=None, projection2=None, labels=None):
-        if self.disableCL:
-            return amc(self.device, am_features, labels)
+        if not self.enableCL:
+            return amc(self.device, am_features, labels, self.margin)
         else:
             assert (
                 projection1 is not None and projection2 is not None
             ), "You haven't provided feature projection for calculating the normal Contrastive Loss component."
-            loss1 = scl(projection1, projection2, labels, self.temperature, self.device)
-            loss2 = amc(self.device, am_features, labels)
+
+            loss1 = scl(projection1, projection2, labels,
+                        self.temperature, self.device)
+            loss2 = amc(self.device, am_features, labels, self.margin)
             return loss1 * self.alpha + (1 - self.alpha) * loss2
 
 
 def scl(projection1, projection2, labels, temperature, device):
-    projection1, projection2 = F.normalize(projection1), F.normalize(projection2)
-    features = torch.cat([projection1.unsqueeze(1), projection2.unsqueeze(1)], dim=1)
+    projection1, projection2 = F.normalize(
+        projection1), F.normalize(projection2)
+    features = torch.cat(
+        [projection1.unsqueeze(1), projection2.unsqueeze(1)], dim=1)
     batch_size = features.shape[0]
 
     if labels is None:
