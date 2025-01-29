@@ -14,35 +14,35 @@ This project used the DCASE 2024 Task 5 Development Set that can be downloaded f
 
 # Training
 
-1. Extract spectrograms of the training set by running the ```create_train.py``` script. This will output a ```.h5``` file that you can use for training. 
+1. Extract spectrograms of the training set by running the ```create_train.py``` script. This will output a ```.h5``` file that you can use for training.\
 
-Required arguments: 
+Required arguments:\
 - ```--traindir```: Specify the directory of the training set.
 - ```--features```: Specify the feature to be extracted. Choose between ```melspec``` for mel-spectrogram or ```pcen``` for Per-Channel Energy Normalization (PCEN).
-
-Example:
+\
+Example:\
 ```python create_train.py --traindir /path/of/your/trainset --features melspec```
 
-2. Train feature extractor by running the ```train.py``` script. This will create the model, run training on the model, and output the trained model. 
+2. Train feature extractor by running the ```train.py``` script. This will create the model, run training on the model, and output the trained model.\
 
-Required arguments: 
+Required arguments:\
 - ```--traindir```: Specify the directory of the training set.
 - ```--device``` Specify the device to train on (e.g. 'cuda', 'cpu', etc.)
 - ```--method```: Specify the method of learning (loss function) to train the encoder. Currently supporting Supervised Contrastive Loss ("scl"), Angular Margin Loss ("aml"), Angular Contrastive Loss ("acl"), and Self-Supervised Learning ("ssl").
-
+\
 Other optional arguments regarding training and data augmentation hyperparameters can be found in ```args.py``` along its default values.
-
-Example:
+\
+Example:\
 ```python train.py --traindir /path/of/your/trainset --device cuda:0 --method acl --h5file name-of-your-h5-file.h5```
 
-3. Finetune and validate the learned feature extractor on validation set using N-shots framework by running the ```evaluate.py``` script. This will output a ```.csv``` file that contains predicted annotation that can be directly used to calculate evaluation score using [the DCASE 2024 Task 5 evaluation score repository]{https://github.com/c4dm/dcase-few-shot-bioacoustic/tree/main/evaluation_metrics} provided by DCASE.
+3. Finetune and validate the learned feature extractor on validation set using N-shots framework by running the ```evaluate.py``` script. This will output a ```.csv``` file that contains predicted annotation that can be directly used to calculate evaluation score using [the DCASE 2024 Task 5 evaluation score repository]{https://github.com/c4dm/dcase-few-shot-bioacoustic/tree/main/evaluation_metrics} provided by DCASE.\
 
-Required arguments:
+Required arguments:\
 - ```--traindir```: Specify the directory of the training set.
 - ```--valdir```: Specify the directory of the validation sets
-
+\
 Other optional arguments regarding finetuning hyperparameters and their default values can also be found in ```args.py```.
-
+\
 Example:\
 ```python evaluate.py --valdir /path/of/your/valset --ft 0 --ftlr 0.01 --ftepochs 20 --method ce --adam```
 
