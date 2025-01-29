@@ -16,27 +16,24 @@ from models import ResNet
 def train(encoder, train_loader, transform1, transform2, args):
     print(f"Training starting on {args.device}")
 
-    try:
-        if args.method in ["scl", "ssl"]:
-            loss_fn = SupConLoss(temperature=args.tau, device=args.device)
-        elif args.method == "aml":
-            loss_fn = AngularContrastiveLoss(
-                margin=args.margin,
-                temperature=args.tau,
-                device=args.device,
-                enableCL=False
-            )
-        elif args.method == "acl":
-            loss_fn = AngularContrastiveLoss(
-                margin=args.margin,
-                alpha=args.alpha,
-                temperature=args.tau,
-                device=args.device,
-            )
-        else:
-            raise ValueError
-    except ValueError:
-        print(
+    if args.method in ["scl", "ssl"]:
+        loss_fn = SupConLoss(temperature=args.tau, device=args.device)
+    elif args.method == "aml":
+        loss_fn = AngularContrastiveLoss(
+            margin=args.margin,
+            temperature=args.tau,
+            device=args.device,
+            enableCL=False
+        )
+    elif args.method == "acl":
+        loss_fn = AngularContrastiveLoss(
+            margin=args.margin,
+            alpha=args.alpha,
+            temperature=args.tau,
+            device=args.device,
+        )
+    else:
+        raise ValueError(
             f"Loss function/learning method {args.method} is not yet supported")
 
     optim = torch.optim.SGD(
