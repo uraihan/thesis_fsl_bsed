@@ -21,7 +21,10 @@ def train(encoder, train_loader, transform1, transform2, args):
             loss_fn = SupConLoss(temperature=args.tau, device=args.device)
         elif args.method == "aml":
             loss_fn = AngularContrastiveLoss(
-                margin=args.margin, temperature=args.tau, device=args.device
+                margin=args.margin,
+                temperature=args.tau,
+                device=args.device,
+                disableCL=True
             )
         elif args.method == "acl":
             loss_fn = AngularContrastiveLoss(
@@ -33,7 +36,8 @@ def train(encoder, train_loader, transform1, transform2, args):
         else:
             raise ValueError
     except ValueError:
-        print(f"Loss function/learning method {args.method} is not yet supported")
+        print(
+            f"Loss function/learning method {args.method} is not yet supported")
 
     optim = torch.optim.SGD(
         encoder.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.wd
@@ -103,7 +107,8 @@ if __name__ == "__main__":
 
     # Create dataset
     train_dataset = torch.utils.data.TensorDataset(
-        torch.tensor(X).unsqueeze(1), torch.tensor(Y.squeeze(), dtype=torch.long)
+        torch.tensor(X).unsqueeze(1), torch.tensor(
+            Y.squeeze(), dtype=torch.long)
     )
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset,
@@ -116,7 +121,8 @@ if __name__ == "__main__":
 
     # Data augmentation
     time_steps = int(args.sr / (1000 / args.len) / args.hoplen)
-    rc = RandomCrop(n_mels=args.nmels, time_steps=time_steps, tcrop_ratio=args.tratio)
+    rc = RandomCrop(n_mels=args.nmels, time_steps=time_steps,
+                    tcrop_ratio=args.tratio)
     resize = Resize(n_mels=args.nmels, time_steps=time_steps)
     awgn = GaussNoise(stdev_gen=args.noise, device=args.device)
     comp = Compander(comp_alpha=args.comp)
@@ -134,7 +140,8 @@ if __name__ == "__main__":
     print(summary(encoder))
 
     # Launch training
-    print(f"## Training params ##\nMethod: {args.method}\nModel used: {args.model}")
+    print(f"## Training params ##\nMethod: {
+          args.method}\nModel used: {args.model}")
     if args.method in ["acl", "aml"]:
         print(f"Angular Margin: {args.margin}")
     if args.method == "acl":
